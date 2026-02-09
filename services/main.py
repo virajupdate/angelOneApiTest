@@ -1,6 +1,6 @@
 # services/auth_service/app/main.py
 from fastapi import FastAPI, HTTPException
-from angel_auth import angel_login
+from services.angel_auth.app import angel_login
 
 app = FastAPI(title="Auth Service")
 
@@ -16,3 +16,6 @@ def login():
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.get("/market/ltp/stream")
+def ltp_stream():
+    return EventSourceResponse(ltp_event_generator())

@@ -4,6 +4,7 @@ from SmartApi import SmartConnect
 import pyotp
 import os
 from dotenv import load_dotenv
+from services.auth_service.app.angel_session import conn
 
 load_dotenv()
 
@@ -13,6 +14,7 @@ ANGEL_PASSWORD = str(os.getenv("ANGEL_PASSWORD"))
 ANGEL_TOTP = str(os.getenv("ANGEL_TOTP_SECRET"))
 
 def angel_login():
+    global conn
     try:
         conn = SmartConnect(api_key=ANGEL_API_KEY)
 
@@ -25,6 +27,7 @@ def angel_login():
             raise RuntimeError(f"Login failed: {login}")
 
         print('Login Success')
+        conn.setAccessToken(login["data"]["jwtToken"])
         return {
             "jwtToken": login["data"]["jwtToken"],
             "refreshToken": login["data"]["refreshToken"],
