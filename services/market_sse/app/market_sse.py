@@ -1,7 +1,11 @@
 import time
-from services.auth_service.app.angel_session import conn
+from services.auth_service.app import angel_session
+from services.auth_service.app.angel_auth import angel_login
 
 def ltp_event_generator():
+
+    conn=angel_login()
+    print("🔥 In Market SSE conn id:", angel_session.conn)
     if conn is None:
         yield {"event": "error", "data": "Not logged in"}
         return

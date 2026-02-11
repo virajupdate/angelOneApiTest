@@ -1,21 +1,22 @@
-# services/auth_service/app/angel_auth.py
-import requests
-from SmartApi import SmartConnect
-import pyotp
-import os
+import pyotp, os
 from dotenv import load_dotenv
-from services.auth_service.app.angel_session import conn
+from SmartApi import SmartConnect
+from services.auth_service.app import angel_session
 
 load_dotenv()
 
-ANGEL_API_KEY = str(os.getenv("ANGEL_API_KEY"))
+ANGEL_API_KEY = os.getenv("ANGEL_API_KEY")
 ANGEL_CLIENT_ID = os.getenv("ANGEL_CLIENT_ID")
-ANGEL_PASSWORD = str(os.getenv("ANGEL_PASSWORD"))
-ANGEL_TOTP = str(os.getenv("ANGEL_TOTP_SECRET"))
+ANGEL_PASSWORD = os.getenv("ANGEL_PASSWORD")
+ANGEL_TOTP = os.getenv("ANGEL_TOTP_SECRET")
 
 def angel_login():
-    global conn
-    try:
+    with angel_session.login_lock:
+
+        # already logged in → reuse
+        if angel_session.conn and angel_session.feed_token:
+            return angel_session.conn
+
         conn = SmartConnect(api_key=ANGEL_API_KEY)
 
         login = conn.generateSession(
@@ -23,17 +24,14 @@ def angel_login():
             ANGEL_PASSWORD,
             pyotp.TOTP(ANGEL_TOTP).now()
         )
-        if not login.get("status"):
-            raise RuntimeError(f"Login failed: {login}")
 
-        print('Login Success')
-        conn.setAccessToken(login["data"]["jwtToken"])
-        return {
-            "jwtToken": login["data"]["jwtToken"],
-            "refreshToken": login["data"]["refreshToken"],
-            "feedToken": login["data"]["feedToken"],
-            "clientCode": ANGEL_CLIENT_ID
-        }
-    except Exception as e:
-        print(f"Error during login: {e}")
-        raise   
+        if not login.get("status"):
+            raise RuntimeError(f"Angel login failed: {login}")
+
+        angel_session.conn = conn
+        angel_session.feed_token = login["data"]["feedToken"]
+        angel_session.client_code = ANGEL_CLIENT_ID
+
+        print("✅ Angel One login successful LOGIN conn id: ", angel_session.conn)
+
+        return conn

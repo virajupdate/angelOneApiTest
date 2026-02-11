@@ -10,13 +10,14 @@ app = FastAPI(title="Auth Service")
 def health():
     return {"status": "ok"}
 
-@app.post("/auth/angel/login")
-def login():
+@app.on_event("startup")
+def startup_event():
     try:
-        data = angel_login()
-        return data
+        print("🚀 FastAPI startup: logging into Angel One")
+        angel_login()
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Error during Angel login: {e}")
+        raise HTTPException(status_code=500, detail="Failed to login to Angel One API")
 
 @app.get("/market/ltp/stream")
 def ltp_stream():
