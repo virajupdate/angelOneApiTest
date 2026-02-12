@@ -1,6 +1,8 @@
 import time
 from services.auth_service.app import angel_session
 from services.auth_service.app.angel_auth import angel_login
+from services.database.symbol_repo import get_all_symbols
+import time
 
 def ltp_event_generator():
 
@@ -16,6 +18,7 @@ def ltp_event_generator():
     ]
 
     while True:
+        symbols = get_all_symbols()
         updates = []
 
         for s in symbols:
