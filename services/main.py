@@ -1,9 +1,10 @@
 # services/auth_service/app/main.py
 from fastapi import FastAPI, HTTPException
 from services.auth_service.app.angel_auth import angel_login
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from services.database.symbol_repo import add_symbol, delete_symbol, get_all_ltp_user, get_all_symbols_user
 from services.database.db import createUserSymbolTable
+from services.market_sse.app.symbol_service import get_symbols_by_exchange
 from pydantic import BaseModel
 
 app = FastAPI(title="Auth Service")
@@ -22,7 +23,7 @@ def startup_event():
         print(f"Error during Angel login: {e}")
         raise HTTPException(status_code=500, detail="Failed to login to Angel One API")
 
-symbolRouter = APIRouter()
+symbolRouter = APIRouter(prefix="/symbols")
 
 class symbolCreate(BaseModel):
     exchange: str
@@ -58,5 +59,10 @@ def display_all_symbols_user():
 @symbolRouter.get("/ltp/user/all")
 def fetch_all_ltp():
     return get_all_ltp_user()
+
+@symbolRouter.get("/by-market")
+def fetch_symbols_by_market(
+    market: str = Query(..., description="NSE or BSE")):
+    return get_symbols_by_exchange(market)
 
 app.include_router(symbolRouter)
