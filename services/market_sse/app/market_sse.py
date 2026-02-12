@@ -1,24 +1,17 @@
+import asyncio
+from typing import List, Dict
 import time
 from services.auth_service.app import angel_session
-from services.auth_service.app.angel_auth import angel_login
-from services.database.symbol_repo import get_all_symbols
-import time
 
-def ltp_event_generator():
+async def ltp_all(symbols: List[Dict[str, str]]):
 
-    conn=angel_login()
-    print("🔥 In Market SSE conn id:", angel_session.conn)
+    conn = angel_session.conn
+
     if conn is None:
         yield {"event": "error", "data": "Not logged in"}
         return
 
-    symbols = [
-        {"exchange": "NSE", "tradingsymbol": "SBIN-EQ", "symboltoken": "3045"},
-        {"exchange": "NSE", "tradingsymbol": "RELIANCE-EQ", "symboltoken": "2885"},
-    ]
-
     while True:
-        symbols = get_all_symbols()
         updates = []
 
         for s in symbols:
@@ -46,4 +39,4 @@ def ltp_event_generator():
             "data": updates
         }
 
-        time.sleep(1)
+        await asyncio.sleep(1)

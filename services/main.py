@@ -1,11 +1,9 @@
 # services/auth_service/app/main.py
 from fastapi import FastAPI, HTTPException
 from services.auth_service.app.angel_auth import angel_login
-from services.market_sse.app.market_sse import ltp_event_generator
-from sse_starlette.sse import EventSourceResponse
 from fastapi import APIRouter
-from services.database.symbol_repo import add_symbol, delete_symbol
-from services.database.db import createSymbolTable
+from services.database.symbol_repo import add_symbol, delete_symbol, get_all_ltp_user, get_all_symbols_user
+from services.database.db import createUserSymbolTable
 from pydantic import BaseModel
 
 app = FastAPI(title="Auth Service")
@@ -19,16 +17,12 @@ def startup_event():
     try:
         print("🚀 FastAPI startup: logging into Angel One")
         angel_login()
-        createSymbolTable()
+        createUserSymbolTable()
     except Exception as e:
         print(f"Error during Angel login: {e}")
         raise HTTPException(status_code=500, detail="Failed to login to Angel One API")
 
-@app.get("/market/ltp/stream")
-def ltp_stream():
-    return EventSourceResponse(ltp_event_generator())
-
-symbolRouter = APIRouter(prefix="/symbols")
+symbolRouter = APIRouter()
 
 class symbolCreate(BaseModel):
     exchange: str
@@ -55,3 +49,14 @@ def remove_symbol(symbol: symbolDelete):
         return {"message": "Symbol not found"}
 
     return {"message": "Symbol deleted successfully"}
+
+@symbolRouter.get("/display/user/all")
+def display_all_symbols_user():
+    symbols=get_all_symbols_user()
+    return symbols
+
+@symbolRouter.get("/ltp/user/all")
+def fetch_all_ltp():
+    return get_all_ltp_user()
+
+app.include_router(symbolRouter)
