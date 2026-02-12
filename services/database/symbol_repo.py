@@ -12,14 +12,31 @@ def get_all_symbols():
     return [dict(row) for row in rows]
 
 
-def add_symbol(exchange, tradingsymbol, symboltoken):
+def add_symbol(exchange, tradingSymbol, symbolToken):
     conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
-       INSERT INTO symbol (exchange, tradingsymbol, symboltoken)
+       INSERT INTO symbol (exchange, tradingSymbol, symbolToken)
 VALUES (?, ?, ?)
-    """, (exchange, tradingsymbol, symboltoken))
+    """, (exchange, tradingSymbol, symbolToken))
 
     conn.commit()
     conn.close()
+
+def delete_symbol(tradingSymbol):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        DELETE FROM symbols
+        WHERE tradingsymbol = ?
+    """, (tradingSymbol,))
+
+    conn.commit()
+
+    rows_deleted = cursor.rowcount
+    conn.close()
+
+    return rows_deleted
+

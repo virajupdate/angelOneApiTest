@@ -16,9 +16,8 @@ def createSymbolTable():
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS symbol (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             exchange TEXT NOT NULL,
-            tradingsymbol TEXT NOT NULL,
+            tradingsymbol TEXT PRIMARY KEY NOT NULL,
             symboltoken TEXT NOT NULL
         )
     """)

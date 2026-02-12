@@ -4,7 +4,7 @@ from services.auth_service.app.angel_auth import angel_login
 from services.market_sse.app.market_sse import ltp_event_generator
 from sse_starlette.sse import EventSourceResponse
 from fastapi import APIRouter
-from services.database.symbol_repo import add_symbol
+from services.database.symbol_repo import add_symbol, delete_symbol
 from services.database.db import createSymbolTable
 from pydantic import BaseModel
 
@@ -30,18 +30,28 @@ def ltp_stream():
 
 symbolRouter = APIRouter(prefix="/symbols")
 
-class SymbolCreate(BaseModel):
+class symbolCreate(BaseModel):
     exchange: str
-    tradingsymbol: str
-    symboltoken: str
+    tradingSymbol: str
+    symbolToken: str
 
 @symbolRouter.post("/add")
-def create_symbol(symbol: SymbolCreate):
+def create_symbol(symbol: symbolCreate):
     add_symbol(
         symbol.exchange,
-        symbol.tradingsymbol,
-        symbol.symboltoken
+        symbol.tradingSymbol,
+        symbol.symbolToken
     )
     return {"status": "Symbol added"}
 
-app.include_router(symbolRouter)
+class symbolDelete(BaseModel):
+    tradingSymbol: str
+
+@symbolRouter.post("/delete")
+def remove_symbol(symbol: symbolDelete):
+    rows_deleted = delete_symbol(symbol.tradingSymbol)
+
+    if rows_deleted == 0:
+        return {"message": "Symbol not found"}
+
+    return {"message": "Symbol deleted successfully"}
