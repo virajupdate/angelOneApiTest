@@ -4,7 +4,7 @@ from services.auth_service.app.angel_auth import angel_login
 from fastapi import APIRouter, Query
 from services.database.symbol_repo import add_symbol, delete_symbol, get_all_ltp_user, get_all_symbols_user
 from services.database.db import createUserSymbolTable, createMarketSymbolTable
-from services.market_sse.app.symbol_service import get_symbols_by_exchange
+from services.market_sse.app.symbol_service import get_symbols_by_exchange, sync_master_data
 from pydantic import BaseModel
 
 app = FastAPI(title="Auth Service")
@@ -20,6 +20,7 @@ def startup_event():
         angel_login()
         createUserSymbolTable()
         createMarketSymbolTable()
+        sync_master_data()
     except Exception as e:
         print(f"Error during Angel login: {e}")
         raise HTTPException(status_code=500, detail="Failed to login to Angel One API")

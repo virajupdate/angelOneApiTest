@@ -32,8 +32,8 @@ def createMarketSymbolTable():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS marketSymbol (
             exchange TEXT NOT NULL,
-            tradingsymbol TEXT PRIMARY KEY NOT NULL,
-            symboltoken TEXT NOT NULL
+            tradingSymbol TEXT PRIMARY KEY NOT NULL,
+            symbolToken TEXT NOT NULL
         )
     """)
 

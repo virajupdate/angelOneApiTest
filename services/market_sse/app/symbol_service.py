@@ -6,50 +6,73 @@ from services.database.db import get_connection
 MASTER_URL = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
 
 
-def load_master_data():
+def sync_master_data():
+    print("🌐 Fetching latest master data...")
+
+    response = requests.get(MASTER_URL)
+    response.raise_for_status()
+    master_data = response.json()
+
     conn = get_connection()
     cursor = conn.cursor()
 
-    cursor.execute("SELECT COUNT(*) FROM marketSymbol")
-    count = cursor.fetchone()[0]
+    # Convert master data to dict for fast lookup
+    master_dict = {
+        s["symbol"]: (
+            s["exch_seg"],
+            s["symbol"],
+            s["token"]
+        )
+        for s in master_data
+    }
 
-    if count > 0:
-        print("✅ Loading symbols from DB")
-        conn.close()
-        return
+    # Fetch existing DB records
+    cursor.execute("SELECT exchange, tradingSymbol, symbolToken FROM marketSymbol")
+    db_rows = cursor.fetchall()
 
-    print("🌐 Fetching master from URL...")
-    response = requests.get(MASTER_URL)
-    response.raise_for_status()
-    data = response.json()
+    db_dict = {
+        row[1]: (row[0], row[1], row[2])
+        for row in db_rows
+    }
 
-    # Insert into DB
-    symbols = [
-        (s["exch_seg"], s["symbol"], s["token"])
-        for s in data
+    master_tokens = set(master_dict.keys())
+    db_tokens = set(db_dict.keys())
+
+    # ✅ 1. Insert + Update (UPSERT)
+    upsert_data = [
+        master_dict[token]
+        for token in master_tokens
     ]
 
     cursor.executemany("""
-        INSERT OR IGNORE INTO marketSymbol
-        (exchange, tradingsymbol, symboltoken)
+        INSERT INTO marketSymbol (exchange, tradingSymbol, symbolToken)
         VALUES (?, ?, ?)
-    """, symbols)
+        ON CONFLICT(tradingSymbol)
+        DO UPDATE SET
+            exchange=excluded.exchange,
+            symbolToken=excluded.symbolToken
+    """, upsert_data)
+
+    # ✅ 2. Delete records not in master
+    tokens_to_delete = db_tokens - master_tokens
+
+    if tokens_to_delete:
+        cursor.executemany("""
+            DELETE FROM marketSymbol WHERE tradingSymbol = ?
+        """, [(token,) for token in tokens_to_delete])
 
     conn.commit()
     conn.close()
 
-    print("✅ Master data inserted into DB")
-
+    print("✅ Master sync complete")
 
 def get_symbols_by_exchange(exchange: str):
     exchange = exchange.upper()
     conn = get_connection()
     cursor = conn.cursor()
 
-    load_master_data()
-
     cursor.execute("""
-        SELECT exchange, tradingsymbol, symboltoken
+        SELECT exchange, tradingSymbol, symbolToken
         FROM marketSymbol
         WHERE exchange = ?
     """, (exchange,))
@@ -59,8 +82,8 @@ def get_symbols_by_exchange(exchange: str):
     return [
         {
             "exchange": row[0],
-            "tradingsymbol": row[1],
-            "symboltoken": row[2]
+            "tradingSymbol": row[1],
+            "symbolToken": row[2]
         }
         for row in rows
     ]
