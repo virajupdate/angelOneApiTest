@@ -24,3 +24,21 @@ def createUserSymbolTable():
 
     conn.commit()
     conn.close()
+
+def createMarketSymbolTable():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS marketSymbol (
+            exchange TEXT NOT NULL,
+            tradingsymbol TEXT PRIMARY KEY NOT NULL,
+            symboltoken TEXT NOT NULL
+        )
+    """)
+
+    cursor.execute("""CREATE INDEX IF NOT EXISTS idx_tradingSymbol
+            ON marketSymbol(tradingsymbol);""")
+
+    conn.commit()
+    conn.close()
