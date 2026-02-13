@@ -1,6 +1,4 @@
 from services.database.db import get_connection
-from services.market_sse.app.market_sse import ltp_all
-from sse_starlette.sse import EventSourceResponse
 
 def add_symbol(exchange, tradingSymbol, symbolToken):
     conn = get_connection()
@@ -48,8 +46,3 @@ def get_all_symbols_user():
         for row in rows
     ]
     return symbols
-
-def get_all_ltp_user():
-    symbolsList = get_all_symbols_user()
-    print('Checkout the list of all symbols from get_all_symbols', symbolsList)
-    return EventSourceResponse(ltp_all(symbolsList))
