@@ -10,7 +10,6 @@ from services.market_sse.app.ws_manager import AngelWebSocketManager
 from pydantic import BaseModel
 
 app = FastAPI(title="Auth Service")
-ws_manager = AngelWebSocketManager()
 
 @app.get("/")
 def health():
@@ -24,7 +23,7 @@ def startup_event():
         createUserSymbolTable()
         createMarketSymbolTable()
         sync_master_data()
-        ws_manager.connect()
+        AngelWebSocketManager().connect()
     except Exception as e:
         print(f"Error during Angel login: {e}")
         raise HTTPException(status_code=500, detail="Failed to login to Angel One API")

@@ -1,14 +1,24 @@
 import json
 import threading
+import redis
 from SmartApi.smartWebSocketV2 import SmartWebSocketV2
 from services.auth_service.app import angel_session
 
 
-class AngelWebSocketManager:
+class angelWebSocketManager:
     def __init__(self):
         self.sws = None
         self.connected = False
-        self.latest_prices = {}  # cache: token -> ltp
+
+        # 🔥 Redis connection (shared state)
+        self.redis_client = redis.Redis(
+            host="localhost",
+            port=6379,
+            db=0,
+            decode_responses=True  # returns str instead of bytes
+        )
+
+    # ================= CONNECT =================
 
     def connect(self):
         conn = angel_session.conn
@@ -16,16 +26,11 @@ class AngelWebSocketManager:
         if conn is None:
             raise Exception("Angel session not available")
 
-        auth_token = conn.access_token
-        api_key = conn.api_key
-        client_code = conn.client_code
-        feed_token = conn.feed_token
-
         self.sws = SmartWebSocketV2(
-            auth_token=auth_token,
-            api_key=api_key,
-            client_code=client_code,
-            feed_token=feed_token
+            auth_token=conn.access_token,
+            api_key=conn.api_key,
+            client_code=conn.client_code,
+            feed_token=conn.feed_token
         )
 
         # Assign callbacks
@@ -34,7 +39,7 @@ class AngelWebSocketManager:
         self.sws.on_error = self.on_error
         self.sws.on_close = self.on_close
 
-        # Start socket in background thread
+        # Run websocket in background thread
         threading.Thread(target=self.sws.connect, daemon=True).start()
 
     # ================= CALLBACKS =================
@@ -50,7 +55,11 @@ class AngelWebSocketManager:
             token = data["token"]
             ltp = data["ltp"]
 
-            self.latest_prices[token] = ltp
+            # 🔥 Store in Redis HASH
+            # Key: ltp_cache
+            # Field: token
+            # Value: ltp
+            self.redis_client.hset("ltp_cache", token, ltp)
 
     def on_error(self, ws, error):
         print("❌ WebSocket Error:", error)
@@ -86,5 +95,10 @@ class AngelWebSocketManager:
 
         print("📡 Subscribed to tokens:", tokens)
 
+    # ================= READ LTP =================
+
     def get_ltp(self, token):
-        return self.latest_prices.get(token)
+        """
+        Fetch latest price from Redis
+        """
+        return self.redis_client.hget("ltp_cache", token)
