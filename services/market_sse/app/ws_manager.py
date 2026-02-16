@@ -29,7 +29,7 @@ class angelWebSocketManager:
         self.sws = SmartWebSocketV2(
             auth_token=conn.access_token,
             api_key=conn.api_key,
-            client_code=conn.client_code,
+            client_code=angel_session.client_code,
             feed_token=conn.feed_token
         )
 
