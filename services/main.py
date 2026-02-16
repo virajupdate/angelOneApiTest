@@ -16,8 +16,10 @@ app = FastAPI(title="Auth Service")
 def health():
     return {"status": "ok"}
 
+
+
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     try:
         print("🚀 FastAPI startup: logging into Angel One")
         angel_login()
@@ -60,12 +62,13 @@ def remove_symbol(symbol: symbolDelete):
 @symbolRouter.get("/display/user/all")
 def display_all_symbols_user():
     symbols=get_all_symbols_user()
+    print(symbols)
     return symbols
 
 @symbolRouter.get("/ltp/user/all")
-def fetch_all_ltp():
+async def fetch_all_ltp():
     symbolList = get_all_symbols_user()
-    return user_symbols_ltp(symbolList)
+    return await user_symbols_ltp(symbolList)
 
 @symbolRouter.get("/by-market")
 def fetch_symbols_by_market(

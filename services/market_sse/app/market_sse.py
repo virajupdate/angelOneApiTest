@@ -14,7 +14,7 @@ async def user_symbols_ltp(symbols: List[Dict[str, str]]):
     if not symbols:
         return []
 
-    tokens = [s["token"] for s in symbols]
+    tokens = [s["symboltoken"] for s in symbols]
 
     # Subscribe (only new ones)
     if webSocketObj.connected:
@@ -27,8 +27,8 @@ async def user_symbols_ltp(symbols: List[Dict[str, str]]):
 
     for symbol, ltp in zip(symbols, ltps):
         response.append({
-            "symbol": symbol["symbol"],
-            "token": symbol["token"],
+            "symbol": symbol["tradingsymbol"],
+            "token": symbol["symboltoken"],
             "exchange": symbol["exchange"],
             "ltp": float(ltp) if ltp else None
         })
