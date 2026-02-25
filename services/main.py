@@ -9,6 +9,7 @@ from services.market_sse.app.market_sse import user_symbols_ltp
 from services.market_sse.app.ws_manager import angelWebSocketManager
 from services.auth_service.app.angel_session import client_code
 from pydantic import BaseModel
+from fastapi import Request
 
 app = FastAPI(title="Auth Service")
 
@@ -22,28 +23,31 @@ def health():
 async def startup_event():
     try:
         print("🚀 FastAPI startup: logging into Angel One")
-        angel_login()
+        angel_session = angel_login()
         createUserSymbolTable()
         createMarketSymbolTable()
         sync_master_data()
-        angelWebSocketManager().connect()
+        angelOneManager = angelWebSocketManager(angel_session)
+        angelOneManager.connect()
+        app.state.ws_manager = angelOneManager
+        app.state.angel_session = angel_session
     except Exception as e:
         print(f"Error during Angel login: {e}")
         raise HTTPException(status_code=500, detail="Failed to login to Angel One API")
 
 symbolRouter = APIRouter(prefix="/symbols")
 
-class symbolCreate(BaseModel):
-    exchange: str
-    tradingSymbol: str
-    symbolToken: str
+
 
 @symbolRouter.post("/add")
-def create_symbol(symbol: symbolCreate):
+def add_symbol_user(exchange: str, tradingSymbol: str, symbolToken: str, request: Request):
+    redis_client = request.app.state.ws_manager.redis_client
     add_symbol(
-        symbol.exchange,
-        symbol.tradingSymbol,
-        symbol.symbolToken
+        exchange=exchange,
+        tradingSymbol=tradingSymbol,
+        symbolToken=symbolToken,
+        redis_client=redis_client,
+        angel_session = request.app.state.angel_session
     )
     return {"status": "Symbol added"}
 

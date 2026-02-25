@@ -18,7 +18,8 @@ def createUserSymbolTable():
         CREATE TABLE IF NOT EXISTS userSymbol (
             exchange TEXT NOT NULL,
             tradingsymbol TEXT PRIMARY KEY NOT NULL,
-            symboltoken TEXT NOT NULL
+            symboltoken TEXT NOT NULL,
+            costprice INT NOT NULL
         )
     """)
 

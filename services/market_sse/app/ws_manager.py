@@ -6,9 +6,10 @@ from services.auth_service.app import angel_session
 
 
 class angelWebSocketManager:
-    def __init__(self):
+    def __init__(self, angel_session):
         self.sws = None
         self.connected = False
+        self.angel_session = angel_session
 
         # 🔥 Redis connection (shared state)
         self.redis_client = redis.Redis(
@@ -21,7 +22,7 @@ class angelWebSocketManager:
     # ================= CONNECT =================
 
     def connect(self):
-        conn = angel_session.conn
+        conn = self.angel_session
 
         if conn is None:
             raise Exception("Angel session not available")
